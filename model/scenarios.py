@@ -177,6 +177,14 @@ class ScenarioParams:
     interconnect_fi_ee: str = "current"
     interconnect_no: str = "normal"
 
+    # Neighboring area price levels relative to FI forward price (1.0 = parity)
+    # SE3 (Stockholm): historically 5–15% cheaper than FI (FI-SE EPAD)
+    # SE1 (Luleå): northern Sweden hydro, often 15–30% cheaper than FI
+    # EE (Estonia): varies, was cheap with Russian gas, now near FI parity
+    se3_price_relative: float = 0.92   # SE3 = 92% of FI price
+    se1_price_relative: float = 0.78   # SE1 = 78% of FI price
+    ee_price_relative:  float = 1.00   # EE  = 100% of FI price (parity)
+
 
 @dataclass
 class RegressionResult:
@@ -256,12 +264,27 @@ def compute_market_adjustments(params: ScenarioParams, year: int) -> float:
     dc_growth_pct = max(dc_twh - params.datacenter_base_twh, 0.0) / FI_BASE_CONSUMPTION_TWH
     factor *= (1.0 + 0.30 * dc_growth_pct)
 
-    # 9. Interconnections: larger capacity → less pressure on prices
+    # 9. Price coupling with neighboring areas (SE3, SE1, EE)
+    # Coupling effect = price differential × (IC capacity / FI demand)
+    # FI average demand ~9 650 MW (84.5 TWh / 8760 h)
+    _FI_AVG_DEMAND_MW = 9_650.0
     _, fi_se_mw = INTERCONNECT_FI_SE_OPTIONS.get(params.interconnect_fi_se, ("", 2200))
     _, fi_ee_mw = INTERCONNECT_FI_EE_OPTIONS.get(params.interconnect_fi_ee, ("", 1000))
-    total_ic_mw = fi_se_mw + fi_ee_mw
-    ic_adj = (total_ic_mw - 3200) / 1000.0 * (-0.015)  # +1 GW → -1.5%
-    factor *= (1.0 + ic_adj)
+
+    # SE3: main link (FI–SE cable also transmits SE1 influence partly)
+    # SE1 affects FI through SE3 — weighted blend
+    se_blended = 0.65 * params.se3_price_relative + 0.35 * params.se1_price_relative
+    se_coupling = (se_blended - 1.0) * (fi_se_mw / _FI_AVG_DEMAND_MW)
+
+    # EE: Estlink 1+2 coupling
+    ee_coupling = (params.ee_price_relative - 1.0) * (fi_ee_mw / _FI_AVG_DEMAND_MW)
+
+    # Norway hydro scales SE1 effect (more water → SE1 cheaper → FI cheaper)
+    _, no_factor = INTERCONNECT_NO_OPTIONS.get(params.interconnect_no, ("", 1.0))
+    hydro_se1_boost = (no_factor - 1.0) * 0.05  # ±5% to SE1 coupling
+    se_coupling += hydro_se1_boost * (fi_se_mw / _FI_AVG_DEMAND_MW)
+
+    factor *= (1.0 + se_coupling + ee_coupling)
 
     return max(factor, 0.20)
 

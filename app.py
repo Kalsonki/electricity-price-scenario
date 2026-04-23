@@ -389,6 +389,23 @@ with st.sidebar:
         max_price_diff_preview = compute_max_hintaero(tmp_params_ic)
         st.caption(f"Max FI–Nordic price difference: **{max_price_diff_preview:.0f} €/MWh**")
 
+        st.markdown("**Neighboring area price level relative to FI**")
+        se3_price_relative = st.slider(
+            "SE3 (Stockholm) price % of FI",
+            60, 120, 92, 1,
+            help="SE3 is historically 5–15% cheaper than FI (FI-SE EPAD). 100% = parity.",
+        ) / 100.0
+        se1_price_relative = st.slider(
+            "SE1 (Luleå) price % of FI",
+            40, 110, 78, 1,
+            help="Northern Sweden hydro — often 15–30% cheaper than FI.",
+        ) / 100.0
+        ee_price_relative = st.slider(
+            "EE (Estonia) price % of FI",
+            70, 130, 100, 1,
+            help="Estonia is often near FI parity. Was cheaper with Russian gas.",
+        ) / 100.0
+
     st.divider()
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -517,6 +534,9 @@ scenario_params = ScenarioParams(
     interconnect_fi_se=interconnect_fi_se,
     interconnect_fi_ee=interconnect_fi_ee,
     interconnect_no=interconnect_no,
+    se3_price_relative=se3_price_relative,
+    se1_price_relative=se1_price_relative,
+    ee_price_relative=ee_price_relative,
 )
 
 hedge_params = HedgeParams(
