@@ -70,7 +70,8 @@ from model.scenarios import (
     RegressionResult, ScenarioParams, ScenarioResult,
     NUCLEAR_FI_OPTIONS, NUCLEAR_SE_OPTIONS, HYDRO_OPTIONS,
     INTERCONNECT_FI_EE_OPTIONS, INTERCONNECT_FI_SE_OPTIONS, INTERCONNECT_NO_OPTIONS,
-    FI_BASE_CONSUMPTION_TWH, START_YEAR, END_YEAR,
+    FI_BASE_CONSUMPTION_TWH, FI_CONSUMPTION_BREAKDOWN_2025, FI_MONTHLY_CONSUMPTION_2025,
+    START_YEAR, END_YEAR,
     SCENARIO_NAMES, SCENARIO_LABELS, SCENARIO_COLORS,
     calibrate_regression, run_monte_carlo, scenarios_to_dataframe,
     compute_variable_sensitivities, compute_datacenter_projection,
@@ -1073,6 +1074,47 @@ with tabs[tab_offset + 1]:
 
     except Exception as e:
         st.error(f"Capacity chart failed: {e}")
+
+    st.divider()
+
+    # ── Electricity consumption breakdown 2025 (Fingrid data) ────────────────
+    st.markdown("### Electricity consumption breakdown 2025 (Fingrid)")
+
+    col_pie, col_monthly = st.columns(2)
+
+    with col_pie:
+        labels = list(FI_CONSUMPTION_BREAKDOWN_2025.keys())
+        values = list(FI_CONSUMPTION_BREAKDOWN_2025.values())
+        colors = ["#1565C0","#42A5F5","#26C6DA","#66BB6A","#FFA726","#EF5350","#9E9E9E"]
+        fig_pie = go.Figure(go.Pie(
+            labels=labels, values=values,
+            marker=dict(colors=colors),
+            textinfo="label+percent",
+            hovertemplate="%{label}: %{value:.1f} TWh<extra></extra>",
+        ))
+        fig_pie.update_layout(
+            title=f"Total consumption {sum(values):.1f} TWh",
+            height=350, showlegend=False,
+            margin=dict(t=40, b=0, l=0, r=0),
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+    with col_monthly:
+        months_en = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        monthly_vals = [FI_MONTHLY_CONSUMPTION_2025[m] for m in range(1, 13)]
+        fig_bar = go.Figure(go.Bar(
+            x=months_en, y=monthly_vals,
+            marker_color="#1565C0",
+            hovertemplate="%{x}: %{y:.2f} TWh<extra></extra>",
+        ))
+        fig_bar.update_layout(
+            title="Monthly consumption 2025 (TWh)",
+            yaxis_title="TWh", height=350,
+            plot_bgcolor="white", paper_bgcolor="white",
+            yaxis=dict(gridcolor="#E0E0E0"),
+            margin=dict(t=40, b=0, l=0, r=0),
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
 
     st.divider()
 

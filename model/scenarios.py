@@ -48,7 +48,29 @@ SCENARIO_COLORS = {
 
 START_YEAR = 2025
 END_YEAR   = 2038
-FI_BASE_CONSUMPTION_TWH = 85.0   # Finland's current electricity consumption TWh/year
+FI_BASE_CONSUMPTION_TWH = 84.5   # Finland actual consumption 2025 (Fingrid dataset 124)
+
+# Consumption breakdown 2025 (TWh) — Fingrid + Energia.fi + Business Finland
+FI_CONSUMPTION_BREAKDOWN_2025 = {
+    "Industry":       40.5,   # pulp, paper, metals, chemicals
+    "Households":     19.0,
+    "Services":       16.5,
+    "Heat pumps":      6.0,   # ~1M heat pumps
+    "Data centers":    2.5,   # Helsinki datacenter hub
+    "Electric vehicles": 0.3, # ~130k EVs @ 2500 kWh/yr
+    "Other":           0.7,   # transport, agriculture, losses
+}
+
+# Fingrid dataset 124: monthly consumption 2025 (TWh)
+FI_MONTHLY_CONSUMPTION_2025 = {
+    1: 8.35, 2: 7.72, 3: 7.79, 4: 6.93, 5: 6.66, 6: 5.88,
+    7: 6.05, 8: 6.27, 9: 6.05, 10: 7.01, 11: 7.62, 12: 8.22,
+}
+
+# Wind power capture rate: wind receives ~70% of average spot price
+# (negative correlation between wind output and spot price)
+# Used in future investment return calculations (LCOE vs capture price)
+WIND_CAPTURE_RATE = 0.70
 
 # ── Market parameter options (key: (UI_name, price_impact)) ──────────────────
 
@@ -147,7 +169,7 @@ class ScenarioParams:
     ev_twh: float = 1.0                 # electric vehicles
 
     # Datacenters
-    datacenter_base_twh: float = 2.0
+    datacenter_base_twh: float = 2.5   # Fingrid 2025 estimate
     datacenter_growth_pct: float = 8.0  # % per year
 
     # Interconnections
